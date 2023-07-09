@@ -4,8 +4,9 @@ import seaborn as sns
 import numpy as np
 
 N=100
-rho_w = 0.4
-rho_s = rho_w+0.0001
+rho_w = 0.8
+rho_s = 0.000001+rho_w
+# rho_s=0.9
 
 
 def process(N, n, theta, rho):
@@ -27,15 +28,26 @@ def alpha(N,n,theta,rho):
 def prefix(theta,rho):
     return theta*(theta+rho*(1-theta))
 
-def Delta(N,n,theta,rho_s,rho_w):
+def get_frag_1(N,n,theta,rho_w,rho_s):
+    rhoc_s = 1-rho_s
+    rhoc_w = 1-rho_w
+    return rhoc_s/rhoc_w
+
+def get_frag_2(N,n,theta,rho_w,rho_s):
     thetac = 1-theta
     rhoc_s = 1-rho_s
     rhoc_w = 1-rho_w
-    frag_1 = rhoc_s/rhoc_w
-    frag_2 = (2+alpha(N,n,theta,rho_s)+(1/alpha(N,n,theta,rho_s)))/(2+alpha(N,n,theta,rho_w)+(1/alpha(N,n,theta,rho_w)))
-    frag_3_num = (prefix(theta, rho_w)*(1+alpha(N,n,theta,rho_w))+prefix(1-theta, rho_w)*(1+1/alpha(N,n,theta,rho_w)))
-    frag_3_den = (prefix(theta, rho_s)*(1+alpha(N,n,theta,rho_s))+prefix(1-theta, rho_s)*(1+1/alpha(N,n,theta,rho_s)))
-    return frag_1*frag_2*(frag_3_num/frag_3_den)
+    return (2+alpha(N,n,theta,rho_s)+(1/alpha(N,n,theta,rho_s)))/(2+alpha(N,n,theta,rho_w)+(1/alpha(N,n,theta,rho_w)))
+
+def get_frag_3_half(N,n,theta,rho):
+    return (prefix(theta, rho)*(1+alpha(N,n,theta,rho))+prefix(1-theta, rho)*(1+1/alpha(N,n,theta,rho)))
+
+def Delta(N,n,theta,rho_w,rho_s):
+    frag_1 = get_frag_1(N,n,theta,rho_w,rho_s)
+    frag_2 = get_frag_2(N,n,theta,rho_w,rho_s)
+    frag_3_num = get_frag_3_half(N,n,theta,rho_w)
+    frag_3_den = get_frag_3_half(N,n,theta,rho_s)
+    return (frag_1*frag_2*(frag_3_num/frag_3_den))
 
 df = pd.DataFrame()
 thetas = []
@@ -73,48 +85,55 @@ plt.ylabel("theta")
 plt.show()
 
 
-df = pd.DataFrame()
-thetas = []
-for theta in range(50,100):
-    theta = theta/100
-    thetas.append(theta)
-    temp = []
-    for n in range(N):
-        temp.append(Delta(N, n, theta, rho_w, rho_s))
-    df[f'theta={theta}'] = temp
+# df = pd.DataFrame()
+# thetas = []
+# for theta in range(50,100):
+#     theta = theta/100
+#     thetas.append(theta)
+#     temp = []
+#     for n in range(N):
+#         temp.append(Delta(N, n, theta, rho_w, rho_s))
+#     df[f'theta={theta}'] = temp
 
-points_pos = []
-points_neg = []
-for n in range(1,N):
-    for theta in range(0,50):
-        if df.iloc[n,theta]>=1:
-            points_pos.append([n,theta/100+0.5])
-        else:
-            points_neg.append([n,theta/100+0.5])
+# points_pos = []
+# points_neg = []
+# for n in range(1,N):
+#     for theta in range(0,50):
+#         if df.iloc[n,theta]<=1:
+#             points_pos.append([n,theta/100+0.5])
+#         else:
+#             points_neg.append([n,theta/100+0.5])
 
-df_pos = pd.DataFrame(points_pos,columns=['n','theta'])
-plt.scatter(df_pos['n'], df_pos['theta'], color= 'green', label="positive correlation")
+# df_pos = pd.DataFrame(points_pos,columns=['n','theta'])
+# plt.scatter(df_pos['n'], df_pos['theta'], color= 'green', label="positive correlation")
 
-df_neg = pd.DataFrame(points_neg,columns=['n','theta'])
-plt.scatter(df_neg['n'], df_neg['theta'], color= 'red', label="negative correlation")
+# df_neg = pd.DataFrame(points_neg,columns=['n','theta'])
+# plt.scatter(df_neg['n'], df_neg['theta'], color= 'red', label="negative correlation")
 
-plt.legend(loc='upper left')
-plt.title(f"dPr(rho_s|s_1=H,n)/dn for various theta and n where N={N}, rho_s={rho_s}, rho_w={rho_w}")
-plt.xlabel("n")
-plt.ylabel("theta")
-plt.show()
+# plt.legend(loc='upper left')
+# plt.title(f"dPr(rho_s|s_1=H,n)/dn for various theta and n where N={N}, rho_s={rho_s}, rho_w={rho_w}")
+# plt.xlabel("n")
+# plt.ylabel("theta")
+# plt.show()
 
 ## Test Delta
-N=10
-n=5
-theta=0.7
-rho_w = 0.4
-rho_s = 0.6
+# N=100
+# # n=57
+# n=70
+# theta=0.6
+# rho_w = 0.1
+# rho_s = rho_w+0.00000000000001
 
-D_1 = (process(N,n+1, theta, rho_w)/process(N,n+1,theta, rho_s))/(process(N,n, theta, rho_w)/process(N,n,theta, rho_s))
-D_2 = Delta(N,n,theta,rho_s,rho_w)
+# D_1 = (process(N,n+1, theta, rho_w)/process(N,n+1,theta, rho_s))/(process(N,n, theta, rho_w)/process(N,n,theta, rho_s))
+# D_2 = Delta(N,n,theta,rho_w,rho_s)
 
-D_1,D_2
+# D_1,D_2, result(N,n+1, theta, rho_w, rho_s)/result(N,n, theta, rho_w, rho_s)
+
+# tup = get_frag_1(N,n,theta,rho_w,rho_s),get_frag_2(N,n,theta,rho_w,rho_s),get_frag_3_half(N,n,theta,rho_w)/get_frag_3_half(N,n,theta,rho_s),D_2
+# for num in tup:
+#     print(num)
+
+# D_2,get_frag_1(N,n,theta,rho_w,rho_s)*get_frag_2(N,n,theta,rho_w,rho_s)*get_frag_3_half(N,n,theta,rho_w)/get_frag_3_half(N,n,theta,rho_s)
 
 # N=10
 # rho_w = 0.1
@@ -151,3 +170,39 @@ D_1,D_2
 
 # plt.legend()
 # plt.xlabel('theta')
+
+
+# theta=0.8
+# N=100
+# n=60
+# rho_ws= np.linspace(0.1,0.9,50,endpoint=False)
+# rho_ss= rho_ws+0.000001
+
+# results = []
+
+# for rho_w,rho_s in zip(rho_ws, rho_ss):
+#     results.append(Delta(N, n, theta, rho_w, rho_s))
+
+# plt.plot(rho_ws, results)
+
+
+N=100
+rho_w = 0.8
+rho_s = 0.000001+rho_w
+
+for column in df.columns[::5]:
+    plt.plot(df.index,df[column], label=column)
+plt.xlabel('n')
+plt.ylabel('Pr(rho_s|s_1=H,n)')
+plt.legend()
+plt.title(f"Pr(rho_s|s_1=H,n) for various theta and n where N={N}, rho_s={rho_s}, rho_w={rho_w}")
+plt.show()
+
+
+
+plt.plot(df.index,df['theta=0.8'], label='theta=0.8')
+plt.xlabel('n')
+plt.ylabel('Pr(rho_s|s_1=H,n)')
+plt.legend()
+plt.title(f"Pr(rho_s|s_1=H,n) for various theta and n where N={N}, rho_s={rho_s}, rho_w={rho_w}")
+plt.show()
