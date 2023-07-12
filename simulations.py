@@ -2,15 +2,35 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+from math import comb
 
-N=100
-rho_w = 0.8
-rho_s = 0.000001+rho_w
-# rho_s=0.9
+N=10
+rho_w = 0.
+rho_s = 0.001
+# rho_s=0.51
 
+def pcc(theta, rho):
+    return (1-rho)*theta+rho
+
+def picc(theta, rho):
+    return 1-pcc(theta,rho)
+
+def pcic(theta, rho):
+    return (1-rho)*theta
+
+def picic(theta, rho):
+    return 1-pcic(theta, rho)
 
 def process(N, n, theta, rho):
-    return theta*(((1-rho)*theta+rho)**(n-1))*(((1-rho)*(1-theta))**(N-n))+(1-theta)*((1-(1-rho)*theta)**(n-1))*(((1-rho)*theta)**(N-n))
+    term1 = 0.5*comb(N-1,n-1)*(theta) * ((1-rho)*theta+rho)**(n-1) * ((1-rho)*(1-theta))**(N-n)
+    term2 = 0.5*comb(N-1,n)*(1-theta) * ((1-rho)*theta)**n * (1-(1-rho)*theta)**(N-n-1)
+    return term1+term2
+
+# def process(N, n, theta, rho):
+#     return theta*(((1-rho)*theta+rho)**(n-1))*(((1-rho)*(1-theta))**(N-n))+(1-theta)*((1-(1-rho)*theta)**(N-n))*(((1-rho)*theta)**(n-1))
+
+# def process(N, n, theta, rho):
+#     return theta*(((1-rho)*theta+rho)**(n-1))*(((1-rho)*(1-theta))**(N-n))+(1-theta)*((1-(1-rho)*theta)**(N-n))*(((1-rho)*theta)**(n-1))
     # algebra has been done incorrectly
     # return theta*(1+rho*thetac)**(n-1)*(thetac-rho*thetac)**(N-n)+thetac*(thetac+rho*theta)**(n-1)*(theta-rho*theta)**(N-n)
 
@@ -51,11 +71,11 @@ def Delta(N,n,theta,rho_w,rho_s):
 
 df = pd.DataFrame()
 thetas = []
-for theta in range(50,100):
+for theta in range(40,100):
     theta = theta/100
     thetas.append(theta)
     temp = []
-    for n in range(N+1):
+    for n in range(1,N):
         temp.append(result(N, n, theta, rho_w, rho_s))
     df[f'theta={theta}'] = temp
 
@@ -65,7 +85,7 @@ delta = df.diff()
 
 points_pos = []
 points_neg = []
-for n in range(1,N+1):
+for n in range(1,N-1):
     for theta in range(0,50):
         if delta.iloc[n,theta]>=0:
             points_pos.append([n,theta/100+0.5])
@@ -73,10 +93,10 @@ for n in range(1,N+1):
             points_neg.append([n,theta/100+0.5])
 
 df_pos = pd.DataFrame(points_pos,columns=['n','theta'])
-plt.scatter(df_pos['n'], df_pos['theta'], color= 'green', label="positive correlation")
+plt.scatter(df_pos['n']+1, df_pos['theta'], color= 'green', label="positive correlation")
 
 df_neg = pd.DataFrame(points_neg,columns=['n','theta'])
-plt.scatter(df_neg['n'], df_neg['theta'], color= 'red', label="negative correlation")
+plt.scatter(df_neg['n']+1, df_neg['theta'], color= 'red', label="negative correlation")
 
 plt.legend(loc='upper left')
 plt.title(f"dPr(rho_s|s_1=H,n)/dn for various theta and n where N={N}, rho_s={rho_s}, rho_w={rho_w}")
@@ -186,12 +206,8 @@ plt.show()
 # plt.plot(rho_ws, results)
 
 
-N=100
-rho_w = 0.8
-rho_s = 0.000001+rho_w
-
 for column in df.columns[::5]:
-    plt.plot(df.index,df[column], label=column)
+    plt.plot(df.index+1,df[column], label=column)
 plt.xlabel('n')
 plt.ylabel('Pr(rho_s|s_1=H,n)')
 plt.legend()
@@ -199,10 +215,13 @@ plt.title(f"Pr(rho_s|s_1=H,n) for various theta and n where N={N}, rho_s={rho_s}
 plt.show()
 
 
-
-plt.plot(df.index,df['theta=0.8'], label='theta=0.8')
+cols=['theta=0.5']#,'theta=0.9']
+for col in cols:
+    plt.plot(df.index+1,df[col], label=col)
+# plt.axhline(0.5, label='0.5')
 plt.xlabel('n')
 plt.ylabel('Pr(rho_s|s_1=H,n)')
 plt.legend()
-plt.title(f"Pr(rho_s|s_1=H,n) for various theta and n where N={N}, rho_s={rho_s}, rho_w={rho_w}")
+plt.title(f"Pr(rho_s|s_1=H,n) for various n where theta=0.5 N={N}, rho_s={rho_s}, rho_w={rho_w}")
+
 plt.show()
