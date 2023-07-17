@@ -4,11 +4,7 @@ import seaborn as sns
 import numpy as np
 from math import comb
 
-N=100
-rho_w = 0.
-rho_s = 0.001
-theta = 0.5
-intervals = 100
+
 
 def pcc(theta, rho):
     return (1-rho)*theta+rho
@@ -22,58 +18,108 @@ def pcic(theta, rho):
 def picic(theta, rho):
     return 1-pcic(theta, rho)
 
-def result(N,n,theta,rho):
+def get_ngl(N,n,theta,rho):
     num = (1-theta)*n*picic(theta, rho)**(n-1)*pcic(theta,rho)**(N-n)+theta*(N-n)*picc(theta,rho)**n*pcc(theta,rho)**(N-n-1)
+    return num
+
+def get_ngh(N,n,theta,rho):
     den = theta *n*pcc(theta,rho)**(n-1) *picc(theta,rho)**(N-n)+ (1-theta)* (N-n)*pcic(theta,rho)**n* picic(theta,rho)**(N-n-1)
-    return num/den
+    return den
+
+def result(N,n,theta,rho):
+    num = get_ngl(N,n,theta,rho)
+    den = get_ngh(N,n,theta,rho)
+    return 1/(1+(num/den))
+
+def result2(N,n,theta,rhow, rhos):
+    num=get_ngl(N,n,theta,rho_w)/2 + get_ngh(N,n,theta,rho_w)/2
+    den=get_ngl(N,n,theta,rho_s)/2 + get_ngh(N,n,theta,rho_s)/2
+    return 1/(1+(num/den))
+
+N=100
+rho_w = 0.5
+rho_s = 0.6
+# theta = 0.75
+intervals = 100
 
 df = pd.DataFrame()
-rhos = np.linspace(0,1,intervals,endpoint=False)
-thetas = np.linspace(0,1,intervals,endpoint=False)
-for rho in rhos:
+# rhos = np.linspace(0,1,intervals,endpoint=False)
+thetas = np.linspace(0.5,1,intervals,endpoint=False)
+for theta in thetas:
     temp = []
     for n in range(N):
-        temp.append(result(N, n, theta, rho))
-    df[f'rho={rho}'] = temp
+        temp.append(result2(N, n, theta, rho_w, rho_s))
+    df[f'theta={theta}'] = temp
 
 df.index.name='n'
-df = df.T
+# df = df.T
 
 delta = df.diff()
 
 points_pos = []
 points_neg = []
-for n in range(1,N-1):
-    for rho_idx in range(len(rhos)):
-        if delta.iloc[n,rho_idx]>=0:
-            points_pos.append([n,rhos[rho_idx]])
+for n in range(1,N):
+    for theta_idx in range(0,len(thetas)):
+        if delta.iloc[n,theta_idx]>=0:
+            points_pos.append([n,thetas[theta_idx]])
         else:
-            points_neg.append([n,rhos[rho_idx]])
+            points_neg.append([n,thetas[theta_idx]])
 
-df_pos = pd.DataFrame(points_pos,columns=['n','rho'])
-plt.scatter(df_pos['n']+1, df_pos['rho'], color= 'green', label="positive correlation")
+df_pos = pd.DataFrame(points_pos,columns=['n','theta'])
+plt.scatter(df_pos['n']+1, df_pos['theta'], color= 'green', label="positive correlation")
 
-df_neg = pd.DataFrame(points_neg,columns=['n','rho'])
-plt.scatter(df_neg['n']+1, df_neg['rho'], color= 'red', label="negative correlation")
+df_neg = pd.DataFrame(points_neg,columns=['n','theta'])
+plt.scatter(df_neg['n']+1, df_neg['theta'], color= 'red', label="negative correlation")
 
 # plt.legend(loc='upper left')
-plt.title(f"d(Pr(n|H)/Pr(H|n))/drho for various rho and n where N={N}, theta={theta}")
+plt.title(f"d(Pr(rhos|n))/dn for various theta and n where rhow={rho_w}, rhos={rho_s}, N={N}, theta={theta}")
 plt.xlabel("n")
-plt.ylabel("rho")
+plt.ylabel("theta")
 plt.show()
+
+
+# df = pd.DataFrame()
+# rhos = np.linspace(0,1,intervals,endpoint=False)
+# thetas = np.linspace(0,1,intervals,endpoint=False)
+# for rho in rhos:
+#     temp = []
+#     for n in range(N):
+#         temp.append(result(N, n, theta, rho))
+#     df[f'rho={rho}'] = temp
+
+# df.index.name='n'
+# df = df.T
+
+# delta = df.diff()
+
+# points_pos = []
+# points_neg = []
+# for n in range(0,N):
+#     for rho_idx in range(1,len(rhos)):
+#         if delta.iloc[rho_idx,n]>=0:
+#             points_pos.append([n,rhos[rho_idx]])
+#         else:
+#             points_neg.append([n,rhos[rho_idx]])
+
+# df_pos = pd.DataFrame(points_pos,columns=['n','rho'])
+# plt.scatter(df_pos['n']+1, df_pos['rho'], color= 'green', label="positive correlation")
+
+# df_neg = pd.DataFrame(points_neg,columns=['n','rho'])
+# plt.scatter(df_neg['n']+1, df_neg['rho'], color= 'red', label="negative correlation")
+
+# # plt.legend(loc='upper left')
+# plt.title(f"d(H|n)/drho for various rho and n where N={N}, theta={theta}")
+# plt.xlabel("n")
+# plt.ylabel("rho")
+# plt.show()
 
 # def process(N, n, theta, rho):
 #     term1 = 0.5*comb(N-1,n-1)*(theta) * ((1-rho)*theta+rho)**(n-1) * ((1-rho)*(1-theta))**(N-n)
 #     term2 = 0.5*comb(N-1,n)*(1-theta) * ((1-rho)*theta)**n * (1-(1-rho)*theta)**(N-n-1)
 #     return term1+term2
 
-# def process(N, n, theta, rho):
+# def result(N, n, theta, rho):
 #     return theta*(((1-rho)*theta+rho)**(n-1))*(((1-rho)*(1-theta))**(N-n))+(1-theta)*((1-(1-rho)*theta)**(N-n))*(((1-rho)*theta)**(n-1))
-
-# def process(N, n, theta, rho):
-#     return theta*(((1-rho)*theta+rho)**(n-1))*(((1-rho)*(1-theta))**(N-n))+(1-theta)*((1-(1-rho)*theta)**(N-n))*(((1-rho)*theta)**(n-1))
-    # algebra has been done incorrectly
-    # return theta*(1+rho*thetac)**(n-1)*(thetac-rho*thetac)**(N-n)+thetac*(thetac+rho*theta)**(n-1)*(theta-rho*theta)**(N-n)
 
 # def result(N, n, theta, rho_w, rho_s):
 #     return (1+(process(N,n, theta, rho_w)/process(N,n,theta, rho_s)))**-1
